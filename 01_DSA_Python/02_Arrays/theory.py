@@ -389,4 +389,514 @@ min(arr) / max(arr)     | O(n)     | Full scan
 sum(arr)                | O(n)     | Full scan
 """
 
+
+# ============================================================
+# QUESTION APPROACH GUIDE — HOW TO SOLVE ARRAY PROBLEMS
+# ============================================================
+"""
+================================================================
+STEP-BY-STEP APPROACH FOR ARRAY INTERVIEW QUESTIONS
+================================================================
+
+STEP 1: IDENTIFY THE PROBLEM PATTERN
+-------------------------------------
+Ask yourself these questions:
+
+1. Do I need to find a SUBARRAY (contiguous elements)?
+   → Use Sliding Window or Kadane's Algorithm
+   Examples: Max sum subarray, longest subarray with condition
+
+2. Do I need to find PAIRS/TRIPLETS with a condition?
+   → Use Two Pointers (if sorted) or Hashing (if unsorted)
+   Examples: Two sum, three sum, pair with target
+
+3. Do I need to REARRANGE or PARTITION elements?
+   → Use Two Pointers (same direction - slow/fast)
+   Examples: Move zeros, remove duplicates, Dutch National Flag
+
+4. Do I need to find FREQUENCY or COUNT?
+   → Use Hashing (dict/Counter)
+   Examples: Most frequent element, find duplicates
+
+5. Is the array SORTED?
+   → Consider Binary Search or Two Pointers
+   Examples: Search, find range, merge sorted arrays
+
+6. Do I need to track MAXIMUM/MINIMUM over a range?
+   → Use Monotonic Stack or Prefix/Suffix arrays
+   Examples: Next greater element, trapping rain water
+
+
+STEP 2: COMMON ARRAY PATTERNS
+------------------------------
+
+PATTERN 1: TWO POINTERS (Opposite Direction)
+When: Array is sorted, finding pairs, palindrome check
+Template:
+    left, right = 0, len(arr) - 1
+    while left < right:
+        if condition_met:
+            return result
+        elif need_larger_value:
+            left += 1
+        else:
+            right -= 1
+
+PATTERN 2: TWO POINTERS (Same Direction - Slow/Fast)
+When: Remove duplicates, move elements, partition
+Template:
+    slow = 0
+    for fast in range(len(arr)):
+        if condition(arr[fast]):
+            arr[slow] = arr[fast]
+            slow += 1
+    return slow
+
+PATTERN 3: SLIDING WINDOW (Fixed Size)
+When: "Maximum/minimum of subarray size k"
+Template:
+    window_sum = sum(arr[:k])
+    max_sum = window_sum
+    for i in range(k, len(arr)):
+        window_sum += arr[i] - arr[i-k]
+        max_sum = max(max_sum, window_sum)
+
+PATTERN 4: SLIDING WINDOW (Variable Size)
+When: "Longest/shortest subarray with condition"
+Template:
+    left = 0
+    for right in range(len(arr)):
+        add arr[right] to window
+        while window violates condition:
+            remove arr[left] from window
+            left += 1
+        update result
+
+PATTERN 5: HASHING
+When: Need O(1) lookup, find duplicates, two sum
+Template:
+    seen = {}  # or set()
+    for i, num in enumerate(arr):
+        if num in seen:
+            return True  # or use seen[num]
+        seen[num] = i
+
+PATTERN 6: PREFIX SUM
+When: Range sum queries, subarray sum problems
+Template:
+    prefix = [0] * (n + 1)
+    for i in range(n):
+        prefix[i+1] = prefix[i] + arr[i]
+    # Sum from i to j: prefix[j+1] - prefix[i]
+
+PATTERN 7: KADANE'S ALGORITHM
+When: Maximum sum of contiguous subarray
+Template:
+    max_sum = current_sum = arr[0]
+    for i in range(1, len(arr)):
+        current_sum = max(arr[i], current_sum + arr[i])
+        max_sum = max(max_sum, current_sum)
+
+
+STEP 3: PROBLEM-SOLVING FRAMEWORK
+----------------------------------
+
+1. CLARIFY THE PROBLEM
+   □ What is the input format?
+   □ What is the expected output?
+   □ Are there duplicates?
+   □ Is the array sorted?
+   □ What are the constraints? (size, value range)
+   □ What are edge cases? (empty, single element, all same)
+
+2. THINK OF EXAMPLES
+   □ Normal case: [1, 2, 3, 4, 5]
+   □ Edge case: [], [1], [1, 1, 1]
+   □ Negative numbers: [-1, -2, 3]
+   □ Large numbers: [1000000, 999999]
+
+3. IDENTIFY THE PATTERN
+   □ Match the problem to one of the patterns above
+   □ Think about time/space complexity requirements
+
+4. WRITE BRUTE FORCE FIRST (if needed)
+   □ Shows you understand the problem
+   □ Easier to optimize from working code
+   □ Mention: "This is O(n²), we can optimize to O(n)"
+
+5. OPTIMIZE
+   □ Can we use a hash map to avoid nested loops?
+   □ Can we sort first to enable two pointers?
+   □ Can we use sliding window instead of recalculating?
+
+6. CODE CLEANLY
+   □ Handle edge cases at the start
+   □ Use meaningful variable names
+   □ Add comments for complex logic
+
+7. TEST YOUR CODE
+   □ Walk through with example
+   □ Test edge cases
+   □ Check for off-by-one errors
+
+
+STEP 4: DETAILED PATTERN EXAMPLES
+----------------------------------
+"""
+
+
+# --- EXAMPLE 1: Two Sum (Hashing Pattern) ---
+def two_sum_approach(nums, target):
+    """
+    PROBLEM: Find two numbers that add up to target. Return their indices.
+    
+    APPROACH:
+    1. Brute force: O(n²) - check all pairs
+    2. Optimized: O(n) - use hash map
+    
+    WHY HASHING?
+    - Need to find if (target - current) exists
+    - Hash map gives O(1) lookup
+    - Store {value: index} as we iterate
+    
+    STEP-BY-STEP:
+    - For each number, calculate complement = target - number
+    - Check if complement is in hash map
+    - If yes, return [hash_map[complement], current_index]
+    - If no, add current number to hash map
+    
+    TIME: O(n), SPACE: O(n)
+    """
+    seen = {}
+    
+    for i, num in enumerate(nums):
+        complement = target - num
+        if complement in seen:
+            return [seen[complement], i]
+        seen[num] = i
+    
+    return []
+
+
+# --- EXAMPLE 2: Maximum Subarray (Kadane's Algorithm) ---
+def max_subarray_approach(nums):
+    """
+    PROBLEM: Find the contiguous subarray with the largest sum.
+    
+    APPROACH:
+    1. Brute force: O(n²) - try all subarrays
+    2. Optimized: O(n) - Kadane's Algorithm
+    
+    WHY KADANE'S?
+    - At each position, decide: start fresh OR continue current subarray
+    - If current_sum + num < num, better to start fresh at num
+    - Keep track of global maximum
+    
+    INTUITION:
+    - If adding current element makes sum worse than just the element,
+      start a new subarray from current element
+    
+    STEP-BY-STEP:
+    - current_sum = max(num, current_sum + num)
+      → Either start fresh or continue
+    - max_sum = max(max_sum, current_sum)
+      → Track the best we've seen
+    
+    TIME: O(n), SPACE: O(1)
+    """
+    max_sum = current_sum = nums[0]
+    
+    for i in range(1, len(nums)):
+        current_sum = max(nums[i], current_sum + nums[i])
+        max_sum = max(max_sum, current_sum)
+    
+    return max_sum
+
+
+# --- EXAMPLE 3: Move Zeros (Two Pointers - Same Direction) ---
+def move_zeros_approach(nums):
+    """
+    PROBLEM: Move all zeros to the end while maintaining order of non-zeros.
+    Modify in-place.
+    
+    APPROACH:
+    Use slow/fast pointers
+    
+    WHY TWO POINTERS?
+    - Need to partition: non-zeros on left, zeros on right
+    - Slow pointer tracks where to place next non-zero
+    - Fast pointer scans through array
+    
+    STEP-BY-STEP:
+    - slow = 0 (position for next non-zero)
+    - fast scans from 0 to n-1
+    - When fast finds non-zero:
+      → Place it at slow position
+      → Increment slow
+    - After loop, fill remaining positions with zeros
+    
+    ALTERNATIVE (cleaner):
+    - Swap non-zero with position at slow
+    - This automatically moves zeros to end
+    
+    TIME: O(n), SPACE: O(1)
+    """
+    slow = 0
+    
+    # Move all non-zeros to the front
+    for fast in range(len(nums)):
+        if nums[fast] != 0:
+            nums[slow], nums[fast] = nums[fast], nums[slow]
+            slow += 1
+    
+    # No need to fill zeros - they're already there from swaps!
+
+
+# --- EXAMPLE 4: Best Time to Buy/Sell Stock ---
+def max_profit_approach(prices):
+    """
+    PROBLEM: Find max profit from buying and selling stock once.
+    Can only buy before you sell.
+    
+    APPROACH:
+    Track minimum price seen so far and maximum profit
+    
+    WHY THIS WORKS?
+    - To maximize profit, buy at lowest price and sell at highest after
+    - As we scan, track the minimum price seen so far
+    - At each price, calculate profit if we sell today
+    - Keep track of maximum profit
+    
+    STEP-BY-STEP:
+    - min_price = infinity (or first price)
+    - max_profit = 0
+    - For each price:
+      → profit = price - min_price
+      → max_profit = max(max_profit, profit)
+      → min_price = min(min_price, price)
+    
+    TIME: O(n), SPACE: O(1)
+    """
+    if not prices:
+        return 0
+    
+    min_price = float('inf')
+    max_profit = 0
+    
+    for price in prices:
+        min_price = min(min_price, price)
+        profit = price - min_price
+        max_profit = max(max_profit, profit)
+    
+    return max_profit
+
+
+# --- EXAMPLE 5: Contains Duplicate (Hashing) ---
+def contains_duplicate_approach(nums):
+    """
+    PROBLEM: Return true if any value appears at least twice.
+    
+    APPROACH 1: Use a set
+    - Add elements to set as we iterate
+    - If element already in set, we found a duplicate
+    TIME: O(n), SPACE: O(n)
+    
+    APPROACH 2: Sort first
+    - Sort the array
+    - Check adjacent elements
+    TIME: O(n log n), SPACE: O(1) if in-place sort
+    
+    APPROACH 3: Compare lengths
+    - If len(nums) != len(set(nums)), there are duplicates
+    TIME: O(n), SPACE: O(n)
+    
+    BEST FOR INTERVIEW: Approach 1 (clearest logic)
+    """
+    seen = set()
+    
+    for num in nums:
+        if num in seen:
+            return True
+        seen.add(num)
+    
+    return False
+    
+    # One-liner alternative:
+    # return len(nums) != len(set(nums))
+
+
+# --- EXAMPLE 6: Product of Array Except Self ---
+def product_except_self_approach(nums):
+    """
+    PROBLEM: Return array where result[i] = product of all elements except nums[i].
+    Cannot use division. Must be O(n).
+    
+    APPROACH:
+    Use prefix and suffix products
+    
+    WHY THIS WORKS?
+    - Product except self = (product of all before) * (product of all after)
+    - Build prefix products: prefix[i] = nums[0] * ... * nums[i-1]
+    - Build suffix products: suffix[i] = nums[i+1] * ... * nums[n-1]
+    - result[i] = prefix[i] * suffix[i]
+    
+    OPTIMIZATION:
+    - Can do in one pass using result array to store prefix
+    - Then multiply by suffix in reverse pass
+    
+    STEP-BY-STEP:
+    1. result[i] = product of all elements to the LEFT of i
+    2. Traverse right to left, multiply by product of all to the RIGHT
+    
+    TIME: O(n), SPACE: O(1) excluding output array
+    """
+    n = len(nums)
+    result = [1] * n
+    
+    # Build prefix products in result
+    prefix = 1
+    for i in range(n):
+        result[i] = prefix
+        prefix *= nums[i]
+    
+    # Multiply by suffix products
+    suffix = 1
+    for i in range(n - 1, -1, -1):
+        result[i] *= suffix
+        suffix *= nums[i]
+    
+    return result
+
+
+"""
+================================================================
+COMMON MISTAKES TO AVOID
+================================================================
+
+❌ Not handling edge cases:
+   - Empty array: if not arr: return ...
+   - Single element: if len(arr) == 1: return ...
+   - All same elements: [5, 5, 5, 5]
+
+❌ Index out of bounds:
+   - Always check: if i < len(arr) before accessing arr[i]
+   - Be careful with arr[i+1], arr[i-1]
+
+❌ Modifying array while iterating:
+   - Use a copy if needed: for num in arr[:]:
+   - Or iterate in reverse: for i in range(len(arr)-1, -1, -1):
+
+❌ Using wrong pattern:
+   - Don't use sliding window on unsorted array for pair sum
+   - Don't use two pointers if array is not sorted (unless same direction)
+
+❌ Forgetting to return:
+   - Make sure all code paths return a value
+
+❌ Off-by-one errors:
+   - range(n) goes from 0 to n-1
+   - arr[a:b] includes a but excludes b
+   - Last index is len(arr) - 1
+
+❌ Not considering negative numbers:
+   - max_sum might be negative
+   - Initialize with arr[0], not 0
+
+❌ Inefficient string concatenation in loops:
+   - Use list + join instead of +=
+
+
+================================================================
+INTERVIEW TIPS
+================================================================
+
+1. ALWAYS CLARIFY FIRST
+   "Can the array be empty?"
+   "Are there duplicates?"
+   "Is the array sorted?"
+   "What's the range of values?"
+
+2. THINK OUT LOUD
+   "I'm thinking this is a two-pointer problem because..."
+   "We could use hashing here to get O(1) lookup..."
+   "The brute force would be O(n²), but we can optimize..."
+
+3. START SIMPLE
+   "Let me first write the brute force to make sure I understand..."
+   "This works but it's O(n²). Let me optimize it..."
+
+4. TEST AS YOU GO
+   "Let me trace through with [1,2,3]..."
+   "What if the array is empty?"
+   "What if all elements are the same?"
+
+5. STATE COMPLEXITY
+   "This solution is O(n) time and O(n) space because..."
+   "We can't do better than O(n) because we need to look at every element..."
+
+6. BE READY TO OPTIMIZE
+   "We're doing repeated work here - we can cache this..."
+   "We're searching multiple times - a hash map would help..."
+
+
+================================================================
+QUICK REFERENCE: WHEN TO USE WHAT
+================================================================
+
+SORTED ARRAY:
+  → Binary Search: O(log n) search
+  → Two Pointers: O(n) for pairs/triplets
+
+UNSORTED ARRAY:
+  → Hashing: O(1) lookup, find duplicates, two sum
+  → Sorting first: enables two pointers, O(n log n)
+
+SUBARRAY PROBLEMS:
+  → Sliding Window: contiguous subarray with condition
+  → Prefix Sum: range sum queries
+  → Kadane's: maximum sum subarray
+
+PAIR/TRIPLET PROBLEMS:
+  → Two Pointers: if sorted
+  → Hashing: if unsorted
+
+IN-PLACE MODIFICATION:
+  → Two Pointers (slow/fast): remove/move elements
+  → Swap elements: partition, Dutch National Flag
+
+FREQUENCY/COUNTING:
+  → Hash Map (dict): count occurrences
+  → Counter: from collections import Counter
+
+
+================================================================
+PRACTICE STRATEGY
+================================================================
+
+1. Master these core problems first:
+   □ Two Sum
+   □ Best Time to Buy/Sell Stock
+   □ Contains Duplicate
+   □ Maximum Subarray
+   □ Product of Array Except Self
+   □ Move Zeros
+   □ Three Sum
+
+2. For each problem:
+   □ Identify the pattern
+   □ Write brute force first
+   □ Optimize using the pattern
+   □ Test with edge cases
+   □ Analyze time/space complexity
+
+3. Build pattern recognition:
+   □ See "subarray" → think sliding window
+   □ See "pairs" + sorted → think two pointers
+   □ See "pairs" + unsorted → think hashing
+   □ See "maximum sum" → think Kadane's
+   □ See "in-place" → think two pointers
+
+Good luck! 🚀
+"""
+
 print("\n✅ Theory complete! Now go to problems_easy.py to practice!")

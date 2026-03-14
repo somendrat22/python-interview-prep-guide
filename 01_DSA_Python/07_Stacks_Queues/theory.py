@@ -536,3 +536,474 @@ if __name__ == "__main__":
     # [1, 1, 4, 2, 1, 1, 0, 0]
     
     print("\n✅ Stacks & Queues complete!")
+
+
+# ============================================================
+# QUESTION APPROACH GUIDE — DETAILED EXPLANATIONS
+# ============================================================
+"""
+================================================================
+HOW TO IDENTIFY STACK/QUEUE PROBLEMS
+================================================================
+
+USE STACK WHEN:
+  ✓ Matching/nesting (parentheses, brackets, HTML tags)
+  ✓ "Next greater/smaller element"
+  ✓ Undo operations
+  ✓ DFS (Depth-First Search)
+  ✓ Expression evaluation/parsing
+  ✓ Backtracking
+  ✓ Function call stack simulation
+
+USE QUEUE WHEN:
+  ✓ BFS (Breadth-First Search)
+  ✓ Level-by-level processing
+  ✓ First-come-first-served (FIFO)
+  ✓ Sliding window maximum (with deque)
+  ✓ Task scheduling
+
+
+================================================================
+DETAILED PROBLEM-SOLVING APPROACHES
+================================================================
+"""
+
+
+# --- APPROACH 1: Valid Parentheses (Stack Classic) ---
+def valid_parentheses_detailed(s):
+    """
+    PROBLEM: Check if brackets are valid (properly nested and closed).
+    Input: "({[]})" → True
+    Input: "([)]" → False
+    
+    WHY STACK?
+    - Brackets must be closed in REVERSE order of opening
+    - Last opened must be first closed → LIFO → Stack!
+    - Stack stores "what we're expecting to close"
+    
+    VISUALIZATION:
+    s = "({[]})"
+    
+    '(' → push → stack: ['(']
+    '{' → push → stack: ['(', '{']
+    '[' → push → stack: ['(', '{', '[']
+    ']' → matches '[' on top → pop → stack: ['(', '{']
+    '}' → matches '{' on top → pop → stack: ['(']
+    ')' → matches '(' on top → pop → stack: []
+    
+    Stack empty at end → VALID ✓
+    
+    STEP-BY-STEP:
+    1. Create mapping: {closing: opening}
+    2. For each character:
+       - If opening bracket: push to stack
+       - If closing bracket:
+         → Check if stack top matches
+         → If yes, pop
+         → If no, return False
+    3. Stack should be empty at end
+    
+    EDGE CASES:
+    - Empty string → True
+    - Only opening brackets → False (stack not empty)
+    - Only closing brackets → False (stack empty when trying to pop)
+    
+    TIME: O(n), SPACE: O(n)
+    """
+    stack = []
+    mapping = {')': '(', '}': '{', ']': '['}
+    
+    for char in s:
+        if char in mapping:
+            # Closing bracket
+            top = stack.pop() if stack else '#'
+            if mapping[char] != top:
+                return False
+        else:
+            # Opening bracket
+            stack.append(char)
+    
+    return len(stack) == 0
+
+
+# --- APPROACH 2: Next Greater Element (Monotonic Stack) ---
+def next_greater_element_detailed(nums):
+    """
+    PROBLEM: For each element, find next element that is greater.
+    Input: [4, 5, 2, 10, 8]
+    Output: [5, 10, 10, -1, -1]
+    
+    WHY MONOTONIC STACK?
+    - Brute force: O(n²) - for each element, scan right
+    - Optimized: O(n) - use stack to track "pending" elements
+    
+    KEY INSIGHT:
+    - Traverse from RIGHT to LEFT
+    - Stack maintains elements in DECREASING order
+    - For current element, pop smaller elements (they can't be "next greater" for anyone)
+    - Top of stack is the answer
+    
+    VISUALIZATION:
+    arr = [4, 5, 2, 10, 8], traverse right to left
+    
+    i=4: num=8,  stack=[]      → answer=-1, push 8.  stack=[8]
+    i=3: num=10, stack=[8]     → 8<10, pop. stack=[] → answer=-1, push 10. stack=[10]
+    i=2: num=2,  stack=[10]    → 10>2 → answer=10, push 2. stack=[10,2]
+    i=1: num=5,  stack=[10,2]  → 2<5, pop. 10>5 → answer=10, push 5. stack=[10,5]
+    i=0: num=4,  stack=[10,5]  → 5>4 → answer=5, push 4. stack=[10,5,4]
+    
+    Result: [5, 10, 10, -1, -1] ✓
+    
+    WHY THIS WORKS:
+    - Elements in stack are "candidates" for being next greater
+    - We maintain decreasing order
+    - When we see a larger element, smaller ones are useless
+    
+    TIME: O(n) - each element pushed/popped once
+    SPACE: O(n)
+    """
+    n = len(nums)
+    result = [-1] * n
+    stack = []
+    
+    # Traverse from right to left
+    for i in range(n - 1, -1, -1):
+        # Pop elements smaller than current
+        while stack and stack[-1] <= nums[i]:
+            stack.pop()
+        
+        # Top of stack is next greater
+        if stack:
+            result[i] = stack[-1]
+        
+        # Push current element
+        stack.append(nums[i])
+    
+    return result
+
+
+# --- APPROACH 3: Decode String (Stack for Nesting) ---
+def decode_string_detailed(s):
+    """
+    PROBLEM: Decode encoded string.
+    Input: "3[a2[c]]" → "accaccacc"
+    Input: "2[abc]3[cd]ef" → "abcabccdcdcdef"
+    
+    WHY STACK?
+    - Nested brackets → need to track multiple levels
+    - Process innermost brackets first
+    - Stack stores (count, string_so_far) for each level
+    
+    APPROACH:
+    1. Scan character by character
+    2. If digit: build the number
+    3. If '[': push (count, current_string) to stack, reset
+    4. If ']': pop from stack, repeat and append
+    5. If letter: append to current string
+    
+    VISUALIZATION:
+    s = "3[a2[c]]"
+    
+    '3' → count = 3
+    '[' → push (3, ""), reset → stack = [(3, "")]
+    'a' → current = "a"
+    '2' → count = 2
+    '[' → push (2, "a"), reset → stack = [(3, ""), (2, "a")]
+    'c' → current = "c"
+    ']' → pop (2, "a"), current = "a" + "c"*2 = "acc"
+          stack = [(3, "")]
+    ']' → pop (3, ""), current = "" + "acc"*3 = "accaccacc"
+          stack = []
+    
+    TIME: O(n), SPACE: O(n)
+    """
+    stack = []
+    current_string = ""
+    current_num = 0
+    
+    for char in s:
+        if char.isdigit():
+            current_num = current_num * 10 + int(char)
+        elif char == '[':
+            # Push current state to stack
+            stack.append((current_num, current_string))
+            current_num = 0
+            current_string = ""
+        elif char == ']':
+            # Pop and decode
+            num, prev_string = stack.pop()
+            current_string = prev_string + current_string * num
+        else:
+            # Regular character
+            current_string += char
+    
+    return current_string
+
+
+# --- APPROACH 4: Implement Queue using Stacks ---
+def queue_using_stacks_detailed():
+    """
+    PROBLEM: Implement queue using only two stacks.
+    
+    WHY TWO STACKS?
+    - Stack is LIFO, Queue is FIFO
+    - Need to reverse order twice to get FIFO
+    - Use one stack for enqueue, one for dequeue
+    
+    KEY INSIGHT:
+    - inbox: for push operations
+    - outbox: for pop operations
+    - When outbox is empty, pour all from inbox to outbox
+    - This reverses the order!
+    
+    VISUALIZATION:
+    enqueue 1, 2, 3:
+      inbox:  [1, 2, 3]  (3 on top)
+      outbox: []
+    
+    dequeue:
+      outbox is empty → pour inbox into outbox
+      inbox:  []
+      outbox: [3, 2, 1]  (1 on top - first in!)
+      
+      pop from outbox → returns 1 ✓ (FIFO!)
+    
+    AMORTIZED ANALYSIS:
+    - Each element is moved at most twice (inbox → outbox)
+    - Amortized O(1) for all operations
+    
+    TIME: O(1) amortized, SPACE: O(n)
+    """
+    class QueueUsingStacks:
+        def __init__(self):
+            self.inbox = []
+            self.outbox = []
+        
+        def enqueue(self, x):
+            self.inbox.append(x)
+        
+        def dequeue(self):
+            if not self.outbox:
+                # Pour inbox into outbox
+                while self.inbox:
+                    self.outbox.append(self.inbox.pop())
+            return self.outbox.pop()
+        
+        def peek(self):
+            if not self.outbox:
+                while self.inbox:
+                    self.outbox.append(self.inbox.pop())
+            return self.outbox[-1]
+
+
+# --- APPROACH 5: Sliding Window Maximum (Deque) ---
+def max_sliding_window_detailed(nums, k):
+    """
+    PROBLEM: Find maximum in each sliding window of size k.
+    Input: nums = [1,3,-1,-3,5,3,6,7], k = 3
+    Output: [3,3,5,5,6,7]
+    
+    WHY DEQUE (NOT REGULAR QUEUE)?
+    - Need to remove from both ends
+    - Remove from front: old elements outside window
+    - Remove from back: smaller elements (useless)
+    
+    KEY INSIGHT:
+    - Maintain deque in DECREASING order
+    - Store indices, not values
+    - Front of deque is always maximum in current window
+    
+    APPROACH:
+    1. For each element:
+       - Remove indices outside window from front
+       - Remove smaller elements from back
+       - Add current index to back
+       - Front is the maximum
+    
+    VISUALIZATION:
+    nums = [1,3,-1,-3,5,3,6,7], k = 3
+    
+    i=0: num=1,  deque=[0]           → (not enough elements yet)
+    i=1: num=3,  deque=[1]           → 1<3, remove 0, add 1
+    i=2: num=-1, deque=[1,2]         → add 2, max=nums[1]=3 ✓
+    i=3: num=-3, deque=[1,2,3]       → add 3, max=nums[1]=3 ✓
+    i=4: num=5,  deque=[4]           → 5>all, clear, add 4, max=5 ✓
+    i=5: num=3,  deque=[4,5]         → add 5, max=nums[4]=5 ✓
+    i=6: num=6,  deque=[6]           → 6>all, clear, add 6, max=6 ✓
+    i=7: num=7,  deque=[7]           → 7>all, clear, add 7, max=7 ✓
+    
+    TIME: O(n) - each element added/removed once
+    SPACE: O(k)
+    """
+    from collections import deque
+    
+    if not nums or k == 0:
+        return []
+    
+    dq = deque()
+    result = []
+    
+    for i in range(len(nums)):
+        # Remove indices outside window
+        while dq and dq[0] < i - k + 1:
+            dq.popleft()
+        
+        # Remove smaller elements from back
+        while dq and nums[dq[-1]] < nums[i]:
+            dq.pop()
+        
+        # Add current index
+        dq.append(i)
+        
+        # Add to result if window is complete
+        if i >= k - 1:
+            result.append(nums[dq[0]])
+    
+    return result
+
+
+# --- APPROACH 6: Min Stack (Stack with Extra Info) ---
+def min_stack_detailed():
+    """
+    PROBLEM: Design stack with getMin() in O(1).
+    
+    WHY STORE TUPLES?
+    - Need to track minimum at each level
+    - When we pop, we need to know previous minimum
+    - Store (value, current_min) for each element
+    
+    ALTERNATIVE APPROACH:
+    - Use two stacks: one for values, one for minimums
+    - But tuple approach is cleaner
+    
+    VISUALIZATION:
+    push(-2): stack = [(-2, -2)]           → min = -2
+    push(0):  stack = [(-2, -2), (0, -2)]  → min = -2
+    push(-3): stack = [(-2, -2), (0, -2), (-3, -3)] → min = -3
+    getMin(): return -3
+    pop():    stack = [(-2, -2), (0, -2)]  → min = -2
+    top():    return 0
+    getMin(): return -2
+    
+    TIME: O(1) for all operations
+    SPACE: O(n)
+    """
+    class MinStack:
+        def __init__(self):
+            self.stack = []  # stores (value, current_min)
+        
+        def push(self, val):
+            if self.stack:
+                current_min = min(val, self.stack[-1][1])
+            else:
+                current_min = val
+            self.stack.append((val, current_min))
+        
+        def pop(self):
+            self.stack.pop()
+        
+        def top(self):
+            return self.stack[-1][0]
+        
+        def getMin(self):
+            return self.stack[-1][1]
+
+
+"""
+================================================================
+COMMON MISTAKES TO AVOID
+================================================================
+
+❌ Forgetting to check if stack/queue is empty before pop:
+   if stack:
+       top = stack.pop()
+   
+   ✓ Always check before popping
+
+❌ Using list.pop(0) for queue:
+   queue.pop(0)  # O(n) - SLOW!
+   
+   ✓ Use deque:
+   from collections import deque
+   queue = deque()
+   queue.popleft()  # O(1)
+
+❌ Not handling edge cases:
+   - Empty string for parentheses
+   - Single element
+   - All opening/closing brackets
+
+❌ Wrong mapping for parentheses:
+   mapping = {'(': ')'}  # WRONG direction!
+   
+   ✓ Map closing to opening:
+   mapping = {')': '(', '}': '{', ']': '['}
+
+❌ Forgetting monotonic stack order:
+   - For next greater: decreasing order
+   - For next smaller: increasing order
+
+❌ Not understanding amortized complexity:
+   - Queue using stacks: O(1) amortized, not worst-case
+
+
+================================================================
+INTERVIEW TIPS
+================================================================
+
+1. IDENTIFY THE PATTERN
+   "This involves matching brackets, so I'll use a stack..."
+   "We need to find next greater element, so monotonic stack..."
+   "This is level-by-level traversal, so BFS with queue..."
+
+2. EXPLAIN YOUR DATA STRUCTURE CHOICE
+   "Stack because we need LIFO for matching..."
+   "Deque because we need to remove from both ends..."
+   "Two stacks to simulate queue by reversing order..."
+
+3. DISCUSS COMPLEXITY
+   "Each element is pushed and popped once, so O(n)..."
+   "Amortized O(1) because each element moves at most twice..."
+
+4. WALK THROUGH EXAMPLE
+   Show stack/queue state at each step
+   Demonstrate why the approach works
+
+5. MENTION ALTERNATIVES
+   "We could use recursion but stack is more explicit..."
+   "We could use two stacks but tuple approach is cleaner..."
+
+
+================================================================
+QUICK REFERENCE
+================================================================
+
+VALID PARENTHESES:
+  → Stack + mapping {closing: opening}
+  → Push opening, pop when closing matches
+
+NEXT GREATER/SMALLER:
+  → Monotonic stack
+  → Traverse right to left for next greater
+  → Maintain decreasing order
+
+DECODE/EVALUATE:
+  → Stack for nested structures
+  → Push state before '[' or '('
+  → Pop and process after ']' or ')'
+
+QUEUE USING STACKS:
+  → inbox for enqueue, outbox for dequeue
+  → Pour inbox to outbox when outbox empty
+
+SLIDING WINDOW MAX:
+  → Deque in decreasing order
+  → Store indices, not values
+  → Remove from both ends
+
+MIN/MAX STACK:
+  → Store (value, current_min/max) tuples
+  → Or use two stacks
+
+Good luck! 🚀
+"""
